@@ -7,7 +7,7 @@
         "type": "github",
         "url": "https://github.com/lijian736/onnx_viewer"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "lijian-onnx-viewer",
     "icon": "onnxviewer_128.png",
     "engines": {
