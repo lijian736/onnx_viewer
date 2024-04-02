@@ -1,0 +1,59 @@
+{
+    "name": "onnxviewer",
+    "displayName": "ONNX Viewer",
+    "description": "The viewer for Open Neural Network Exchange(ONNX) file",
+    "license": "MIT",
+    "repository": {
+        "type": "github",
+        "url": "https://github.com/lijian736/onnx_viewer"
+    },
+    "version": "1.0.0",
+    "publisher": "lijian-onnx-viewer",
+    "icon": "onnxviewer_128.png",
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": [
+        "Visualization",
+        "Machine Learning"
+    ],
+    "activationEvents": [],
+    "main": "./out/extension.js",
+    "contributes": {
+        "customEditors": [
+            {
+                "viewType": "lijian.onnx.file.viewer",
+                "displayName": "ONNX Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.onnx"
+                    }
+                ],
+                "priority": "default"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "lint": "eslint \"src/**/*.ts\"",
+        "watch": "tsc -w -p ./",
+        "package": "vsce package"
+    },
+    "dependencies": {
+        "vscode-uri": "^3.0.8",
+        "@protobuf-ts/runtime": "^2.9.3"
+    },
+    "devDependencies": {
+        "@protobuf-ts/plugin": "^2.9.3",
+        "@types/node": "^16.11.7",
+        "@types/vscode": "^1.73.0",
+        "@types/vscode-webview": "^1.57.0",
+        "@typescript-eslint/eslint-plugin": "^5.42.0",
+        "@typescript-eslint/parser": "^5.42.0",
+        "browserify": "^17.0.0",
+        "eslint": "^8.26.0",
+        "typescript": "^4.9.4",
+        "protobufjs": "^6.11.2"
+    }
+}

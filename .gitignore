@@ -1,0 +1,4 @@
+extension/out
+extension/node_modules
+.vscode
+extension/package-lock.json
