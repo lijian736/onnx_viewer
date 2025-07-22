@@ -1,28 +1,43 @@
 {
-    "name": "onnxviewer",
-    "displayName": "ONNX Viewer",
+    "name": "qtron",
+    "displayName": "QTron",
     "description": "The viewer for Open Neural Network Exchange(ONNX) file",
     "license": "MIT",
     "repository": {
         "type": "github",
-        "url": "https://github.com/lijian736/onnx_viewer"
+        "url": "https://github.com/satabios/onnx_viewer"
     },
     "version": "1.0.1",
-    "publisher": "lijian-onnx-viewer",
+    "publisher": "satabios",
     "icon": "onnxviewer_128.png",
     "engines": {
-        "vscode": "^1.74.0"
+        "vscode": "^1.75.0"
     },
     "categories": [
         "Visualization",
         "Machine Learning"
     ],
-    "activationEvents": [],
     "main": "./out/extension.js",
     "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "QTron",
+            "properties": {
+                "qtron.pythonPath": {
+                    "type": "string",
+                    "default": "python",
+                    "description": "Path to Python interpreter for ONNX simplification"
+                },
+                "qtron.enableSimplification": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable ONNX simplification before visualization"
+                }
+            }
+        },
         "customEditors": [
             {
-                "viewType": "lijian.onnx.file.viewer",
+                "viewType": "satabios.onnx.file.viewer",
                 "displayName": "ONNX Viewer",
                 "selector": [
                     {
@@ -55,5 +70,16 @@
         "eslint": "^8.26.0",
         "typescript": "^4.9.4",
         "protobufjs": "^6.11.2"
-    }
+    },
+    "files": [
+        "out",
+        "scripts",
+        "onnx_model",
+        "onnx_utils",
+        "onnx_view",
+        "onnxviewer_128.png",
+        "README.md",
+        "LICENSE",
+        "node_modules"
+    ]
 }

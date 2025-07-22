@@ -1,5 +1,18 @@
 import * as vscode from 'vscode';
 import { Utils } from 'vscode-uri';
+import * as path from 'path';
+import * as os from 'os';
+import { execFile } from 'child_process';
+
+// Shared output channel to avoid creating multiple channels
+let sharedOutputChannel: vscode.OutputChannel | undefined;
+
+function getOutputChannel(): vscode.OutputChannel {
+    if (!sharedOutputChannel) {
+        sharedOutputChannel = vscode.window.createOutputChannel('QTron');
+    }
+    return sharedOutputChannel;
+}
 
 /**
  * Define the document (the data model) used for onnx files.
@@ -13,10 +26,150 @@ class OnnxDocument implements vscode.CustomDocument {
     static async create(
         uri: vscode.Uri,
         backupId: string | undefined,
+        extensionContext: vscode.ExtensionContext
     ): Promise<OnnxDocument | PromiseLike<OnnxDocument>> {
         // If we have a backup, read that. Otherwise read the resource from the workspace
         const dataFile = typeof backupId === 'string' ? vscode.Uri.parse(backupId) : uri;
-        const fileData = await vscode.workspace.fs.readFile(dataFile)
+
+        // Try to simplify the ONNX file before loading
+        let fileData: Uint8Array;
+        const inputPath = dataFile.fsPath;
+        const tempDir = os.tmpdir();
+        const tempFile = path.join(tempDir, `onnxsim_${Date.now()}_${Math.random().toString(36).slice(2)}.onnx`);
+        // Use asAbsolutePath for robust script path resolution
+        const simplifyScript = extensionContext.asAbsolutePath(path.join('scripts', 'simplify_onnx.py'));
+
+        // Get configuration settings
+        const config = vscode.workspace.getConfiguration('qtron');
+        const pythonPath = config.get<string>('pythonPath') || 'python';
+        const enableSimplification = config.get<boolean>('enableSimplification') ?? true;
+
+        // Use shared output channel
+        const outputChannel = getOutputChannel();
+        outputChannel.appendLine(`[QTron] === Starting ONNX file processing ===`);
+        outputChannel.appendLine(`[QTron] File: ${inputPath}`);
+        outputChannel.appendLine(`[QTron] Simplification enabled: ${enableSimplification}`);
+        outputChannel.show();
+
+        // Check if simplification is enabled
+        if (!enableSimplification) {
+            outputChannel.appendLine(`[QTron] ONNX simplification disabled by user setting`);
+            fileData = await vscode.workspace.fs.readFile(dataFile);
+            outputChannel.appendLine(`[QTron] Loaded original file successfully (${fileData.length} bytes)`);
+            return new OnnxDocument(uri, new Uint8Array(fileData));
+        }
+
+        outputChannel.appendLine(`[QTron] Temp file: ${tempFile}`);
+        outputChannel.appendLine(`[QTron] Script path: ${simplifyScript}`);
+        outputChannel.appendLine(`[QTron] Python path: ${pythonPath}`);
+
+        // Check if simplifyScript exists
+        let scriptExists = false;
+        try {
+            await vscode.workspace.fs.stat(vscode.Uri.file(simplifyScript));
+            scriptExists = true;
+            outputChannel.appendLine(`[QTron] [Diagnostics] simplify_onnx.py found.`);
+        } catch (e) {
+            const msg = `ONNX Simplifier script not found at: ${simplifyScript}`;
+            outputChannel.appendLine(msg);
+            vscode.window.showErrorMessage(msg);
+            // Optionally, fallback to loading the original ONNX file here
+            throw new Error(msg);
+        }
+
+        // Check if pythonPath is executable (best effort)
+        let pythonOk = true;
+        try {
+            await new Promise<void>((resolve, reject) => {
+                execFile(pythonPath, ['--version'], { timeout: 5000 }, (error, stdout, stderr) => {
+                    if (error) {
+                        outputChannel.appendLine(`[QTron] [ERROR] Python not executable: ${error.message}`);
+                        pythonOk = false;
+                        reject(error);
+                    } else {
+                        outputChannel.appendLine(`[QTron] [Diagnostics] Python version: ${stdout || stderr}`);
+                        resolve();
+                    }
+                });
+            });
+        } catch (e) {
+            vscode.window.showErrorMessage(`[QTron] Python interpreter not found or not executable. ONNX simplification will be skipped.`);
+        }
+
+        outputChannel.show(true);
+        
+        // Try ONNX simplification with aggressive fallback
+        try {
+            if (scriptExists && pythonOk) {
+                outputChannel.appendLine(`[QTron] Attempting ONNX simplification: ${inputPath} → ${tempFile} (using ${pythonPath})`);
+                vscode.window.showInformationMessage(`Attempting ONNX simplification...`);
+                
+                await new Promise<void>((resolve, reject) => {
+                    const child = execFile(
+                        pythonPath,
+                        [simplifyScript, inputPath, tempFile],
+                        { timeout: 10000 }, // Reduced timeout to 10 seconds
+                        (error, stdout, stderr) => {
+                            outputChannel.appendLine(`[QTron] Running: ${pythonPath} ${simplifyScript} ${inputPath} ${tempFile}`);
+                            outputChannel.appendLine(`[QTron] stdout:\n${stdout || '<empty>'}`);
+                            outputChannel.appendLine(`[QTron] stderr:\n${stderr || '<empty>'}`);
+                            
+                            if (error) {
+                                outputChannel.appendLine(`[QTron] ERROR: ${error.message}`);
+                                reject(new Error(stderr || stdout || error.message));
+                            } else {
+                                outputChannel.appendLine(`[QTron] Simplification completed successfully`);
+                                resolve();
+                            }
+                        }
+                    );
+                    
+                    // Fallback: kill process if it doesn't complete within timeout
+                    setTimeout(() => {
+                        if (!child.killed) {
+                            outputChannel.appendLine(`[QTron] WARNING: Simplification timed out, killing process`);
+                            child.kill('SIGTERM');
+                            reject(new Error('Simplification process timed out'));
+                        }
+                    }, 12000); // Kill after 12 seconds (buffer beyond execFile timeout)
+                });
+                
+                // If we get here, check if the simplified file exists and read it
+                try {
+                    await vscode.workspace.fs.stat(vscode.Uri.file(tempFile));
+                    fileData = await vscode.workspace.fs.readFile(vscode.Uri.file(tempFile));
+                    outputChannel.appendLine(`[QTron] Using simplified ONNX file`);
+                    vscode.window.showInformationMessage('ONNX simplification succeeded. Using simplified model.');
+                } catch (statError) {
+                    outputChannel.appendLine(`[QTron] Simplified file not found, falling back to original`);
+                    throw new Error('Simplified file not created');
+                }
+            } else {
+                outputChannel.appendLine(`[QTron] Skipping simplification (script or python not available)`);
+                throw new Error('Simplification prerequisites not met');
+            }
+        } catch (err: any) {
+            // Aggressive fallback: always load original file if simplification fails
+            outputChannel.appendLine(`[QTron] [WARNING] ONNX simplification failed: ${err instanceof Error ? err.message : String(err)}`);
+            outputChannel.appendLine(`[QTron] Loading original ONNX file without simplification`);
+            vscode.window.showWarningMessage('ONNX simplification failed, loading original file.');
+            
+            try {
+                fileData = await vscode.workspace.fs.readFile(dataFile);
+                outputChannel.appendLine(`[QTron] Successfully loaded original file`);
+            } catch (readError) {
+                outputChannel.appendLine(`[QTron] [ERROR] Failed to read original file: ${readError}`);
+                throw readError;
+            }
+        } finally {
+            // Clean up temp file if it exists
+            try { 
+                await vscode.workspace.fs.delete(vscode.Uri.file(tempFile));
+                outputChannel.appendLine(`[QTron] Cleaned up temp file: ${tempFile}`);
+            } catch (cleanupError) {
+                outputChannel.appendLine(`[QTron] Could not clean up temp file: ${cleanupError}`);
+            }
+        }
         return new OnnxDocument(uri, new Uint8Array(fileData));
     }
 
@@ -78,7 +231,7 @@ export class OnnxViewerProvider implements vscode.CustomReadonlyEditorProvider<O
     }
 
     // viewType defined in contributes.customEditors of package.json
-    private static readonly viewType = 'lijian.onnx.file.viewer';
+    private static readonly viewType = 'satabios.onnx.file.viewer';
 
     // Tracks all known webviews
     private readonly webviews = new WebviewCollection();
@@ -108,7 +261,7 @@ export class OnnxViewerProvider implements vscode.CustomReadonlyEditorProvider<O
         openContext: { backupId?: string },
         _token: vscode.CancellationToken
     ): Promise<OnnxDocument> {
-        const document: OnnxDocument = await OnnxDocument.create(uri, openContext.backupId);
+        const document: OnnxDocument = await OnnxDocument.create(uri, openContext.backupId, this._context);
         return document;
     }
 
