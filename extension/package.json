@@ -26,12 +26,22 @@
                 "qtron.pythonPath": {
                     "type": "string",
                     "default": "python",
-                    "description": "Path to Python interpreter for ONNX simplification"
+                    "description": "Path to Python interpreter for ONNX simplification and analysis"
                 },
                 "qtron.enableSimplification": {
                     "type": "boolean",
                     "default": true,
                     "description": "Enable ONNX simplification before visualization"
+                },
+                "qtron.enableOnnxToolProfiling": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable onnx_tool profiling and analysis after simplification"
+                },
+                "qtron.onnxToolResultsPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Directory path where onnx_tool analysis results are saved. If empty, saves next to the ONNX file or in temp directory."
                 }
             }
         },

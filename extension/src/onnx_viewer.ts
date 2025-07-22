@@ -43,12 +43,15 @@ class OnnxDocument implements vscode.CustomDocument {
         const config = vscode.workspace.getConfiguration('qtron');
         const pythonPath = config.get<string>('pythonPath') || 'python';
         const enableSimplification = config.get<boolean>('enableSimplification') ?? true;
+        const enableOnnxToolProfiling = config.get<boolean>('enableOnnxToolProfiling') ?? true;
+        const onnxToolResultsPath = config.get<string>('onnxToolResultsPath') || '';
 
         // Use shared output channel
         const outputChannel = getOutputChannel();
         outputChannel.appendLine(`[QTron] === Starting ONNX file processing ===`);
         outputChannel.appendLine(`[QTron] File: ${inputPath}`);
         outputChannel.appendLine(`[QTron] Simplification enabled: ${enableSimplification}`);
+        outputChannel.appendLine(`[QTron] onnx_tool profiling enabled: ${enableOnnxToolProfiling}`);
         outputChannel.show();
 
         // Check if simplification is enabled
@@ -105,12 +108,21 @@ class OnnxDocument implements vscode.CustomDocument {
                 vscode.window.showInformationMessage(`Attempting ONNX simplification...`);
                 
                 await new Promise<void>((resolve, reject) => {
+                    // Prepare arguments for the script with profiling options
+                    const scriptArgs = [simplifyScript, inputPath, tempFile];
+                    if (enableOnnxToolProfiling) {
+                        scriptArgs.push('true'); // enable_profiling
+                        scriptArgs.push(onnxToolResultsPath); // results_dir
+                    } else {
+                        scriptArgs.push('false'); // disable profiling
+                    }
+                    
                     const child = execFile(
                         pythonPath,
-                        [simplifyScript, inputPath, tempFile],
-                        { timeout: 10000 }, // Reduced timeout to 10 seconds
+                        scriptArgs,
+                        { timeout: 15000 }, // Increased timeout for profiling
                         (error, stdout, stderr) => {
-                            outputChannel.appendLine(`[QTron] Running: ${pythonPath} ${simplifyScript} ${inputPath} ${tempFile}`);
+                            outputChannel.appendLine(`[QTron] Running: ${pythonPath} ${scriptArgs.join(' ')}`);
                             outputChannel.appendLine(`[QTron] stdout:\n${stdout || '<empty>'}`);
                             outputChannel.appendLine(`[QTron] stderr:\n${stderr || '<empty>'}`);
                             
@@ -127,11 +139,11 @@ class OnnxDocument implements vscode.CustomDocument {
                     // Fallback: kill process if it doesn't complete within timeout
                     setTimeout(() => {
                         if (!child.killed) {
-                            outputChannel.appendLine(`[QTron] WARNING: Simplification timed out, killing process`);
+                            outputChannel.appendLine(`[QTron] WARNING: ONNX processing timed out, killing process`);
                             child.kill('SIGTERM');
-                            reject(new Error('Simplification process timed out'));
+                            reject(new Error('ONNX processing (simplification + profiling) timed out'));
                         }
-                    }, 12000); // Kill after 12 seconds (buffer beyond execFile timeout)
+                    }, 18000); // Kill after 18 seconds (buffer beyond execFile timeout for profiling)
                 });
                 
                 // If we get here, check if the simplified file exists and read it
@@ -139,7 +151,10 @@ class OnnxDocument implements vscode.CustomDocument {
                     await vscode.workspace.fs.stat(vscode.Uri.file(tempFile));
                     fileData = await vscode.workspace.fs.readFile(vscode.Uri.file(tempFile));
                     outputChannel.appendLine(`[QTron] Using simplified ONNX file`);
-                    vscode.window.showInformationMessage('ONNX simplification succeeded. Using simplified model.');
+                    const message = enableOnnxToolProfiling 
+                        ? 'ONNX simplification and onnx_tool analysis completed successfully.' 
+                        : 'ONNX simplification succeeded. Using simplified model.';
+                    vscode.window.showInformationMessage(message);
                 } catch (statError) {
                     outputChannel.appendLine(`[QTron] Simplified file not found, falling back to original`);
                     throw new Error('Simplified file not created');
