@@ -9,11 +9,11 @@ Why was this developed?
  * I would like to automate mundane tasks in my life.
 
 ```
-📁 ONNX File →      🚀 strip_and_profile_model()     → 👁️ Visualize
-     ↓                        ↓                            ↓
-  Original            [Simplify + Analyze]             Interactive
-   Model                      ↓                           Viewer                              
-                      📄 Reports (.txt, .csv)  [ LightWeight Profiled Model]
+📁 ONNX File →      🚀 strip_and_profile_model() →         👁️ Visualize
+     ↓                        ↓                                 ↓
+  Original            [Simplify + Analyze]                  Interactive
+   Model                      ↓                               Viewer                              
+                      📄 Reports (.txt, .csv)       [ LightWeight Profiled Model]
                         📦 Weights Stripped/
                        Profiled Model (.onnx)                                                                   
 
