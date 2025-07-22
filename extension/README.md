@@ -13,9 +13,9 @@ Why was this developed?
      ↓                        ↓                            ↓
   Original            [Simplify + Analyze]             Interactive
    Model                      ↓                           Viewer                              
-                        📄 Reports (.txt, .csv)  [ LightWeight Profiled Model]
+                      📄 Reports (.txt, .csv)  [ LightWeight Profiled Model]
                         📦 Weights Stripped/
-                        Profiled Model (.onnx)                                                                   
+                       Profiled Model (.onnx)                                                                   
 
 ```
 
@@ -116,7 +116,7 @@ QTron follows an optimized processing pipeline:
 For detailed information about the integration architecture and workflow optimization, see:
 - [Processing Flow Diagram](ONNX_PROCESSING_FLOW.md)
 - [Architecture Overview](ARCHITECTURE_DIAGRAM.md)
-- [Optimization Benefits](OPTIMIZATION_BENEFITS.md)
+- [Optimization Benefits](OPTIMIZATION_BENEFITS.md) [Optimization Benefits](OPTIMIZATION_BENEFITS.md)
 
 ## 💡 Contributing
 
