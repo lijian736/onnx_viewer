@@ -6,7 +6,7 @@ Inspired by [Netron](https://github.com/lutzroeder/netron) but optimized for dev
 Why was this developed?
  * Load Large models faster (we are impatient like that :P)
  * Profile the weight stripped ONNX model (lets make our lives simpler)
- * I would like to automate mundane tasks.
+ * I would like to automate mundane tasks in my life.
 
 ```
 📁 ONNX File →      🚀 strip_and_profile_model()     → 👁️ Visualize
