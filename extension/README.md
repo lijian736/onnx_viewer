@@ -3,6 +3,10 @@
 A lightweight VS Code extension for viewing and analyzing ONNX models with seamless onnx_tool integration.  
 Inspired by [Netron](https://github.com/lutzroeder/netron) but optimized for developer workflows.
 
+Why was this developed?
+ * Load Large models faster (we are impatient like that :P)
+ * Profile the weight stripped ONNX model (lets make our lives simpler)
+ * I would like to automate mundane tasks.
 
 ```
 📁 ONNX File →      🚀 strip_and_profile_model()     → 👁️ Visualize
