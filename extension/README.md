@@ -6,4 +6,4 @@ This project is inspired mainly by Netron(https://github.com/lutzroeder/netron)
 If you have any good suggestions, please feel free to contact me(satabios-736@163.com)
 
 ## Install
-Search 'onnx viewer' in vscode extensions, install it.
+Search 'qtron' in vscode extensions, install it.

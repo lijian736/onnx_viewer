@@ -38,7 +38,7 @@
         "customEditors": [
             {
                 "viewType": "satabios.onnx.file.viewer",
-                "displayName": "ONNX Viewer",
+                "displayName": "qtron",
                 "selector": [
                     {
                         "filenamePattern": "*.onnx"

@@ -204,9 +204,9 @@ class OnnxDocument implements vscode.CustomDocument {
 }
 
 /**
- * Provider for ONNX viewer.
+ * Provider for qtron.
  *
- * ONNX ViewerProvider are used for `.onnx` files
+ * qtronProvider are used for `.onnx` files
  */
 export class OnnxViewerProvider implements vscode.CustomReadonlyEditorProvider<OnnxDocument> {
 
