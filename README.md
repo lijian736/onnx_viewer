@@ -11,8 +11,8 @@ Why was this developed?
 ```
 📁 ONNX File →      🚀 strip_and_profile_model() →         👁️ Visualize
      ↓                        ↓                                 ↓
-  Original            [Simplify + Analyze]                  Interactive
-   Model                      ↓                               Viewer                              
+  Original             [Simplify + Analyze]                 Interactive
+   Model                      ↓                               Viewer
                       📄 Reports (.txt, .csv)       [ LightWeight Profiled Model]
                         📦 Weights Stripped/
                        Profiled Model (.onnx)                                                                   
